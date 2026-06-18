@@ -1,0 +1,28 @@
+body{
+    background-color:#000;
+}
+
+.card{
+    border:none;
+}
+
+.navbar{
+    border-bottom:1px solid red;
+}
+
+.card-header{
+    color:red;
+}
+
+.btn-danger{
+    background:#c00000;
+    border:none;
+}
+
+.btn-danger:hover{
+    background:#ff0000;
+}
+
+h3{
+    color:white;
+}
