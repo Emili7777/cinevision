@@ -59,10 +59,15 @@
             CINEVISION - OPERATORE
         </a>
 
-        <div class="d-flex align-items-center">
-            <span class="text-white me-3">
+       <div class="text-white me-3 text-end">
+            <div>
                 {{ operatore.nome }} {{ operatore.cognome }}
-            </span>
+            </div>
+            <small class="text-secondary">
+                {{ operatore.tipo_di_contratto }} |
+                Assunto il {{ operatore.data_assunzione|date:"d/m/Y" }}
+            </small>
+        </div>
 
             <a href="{% url 'logout' %}" class="btn btn-outline-danger">
                 Logout

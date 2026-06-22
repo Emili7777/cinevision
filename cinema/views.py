@@ -4,6 +4,7 @@ from .models import * #NON TOCCARE
 import hashlib
 from django.utils import timezone
 from decimal import Decimal
+from django.db.models import Avg, Count
 
 
 def login(request):
@@ -105,16 +106,22 @@ def registrazione(request):
 
 def homepage(request):
 
-    film_list = Film.objects.all()
+    oggi = timezone.localdate()
+
+    film_list = Film.objects.annotate(
+        media_valutazione=Avg('recensione__valutazione'),
+        numero_recensioni=Count('recensione')
+    )
 
     spettacoli = Spettacolo.objects.select_related(
         'film',
         'sala'
+    ).filter(
+        data_spettacolo=oggi
     ).order_by(
         'film__titolo',
         'ora_inizio'
     )
-
 
     premium = False
 
@@ -137,6 +144,8 @@ def homepage(request):
             'premium': premium
         }
     )
+
+
 def acquisto_biglietti(request, id_film):
     """Visualizza la pagina di acquisto e gestisce selezione e conferma.
     - GET: permette selezione separata di data e orario; mostra griglia 5x5 dei posti
@@ -187,10 +196,15 @@ def acquisto_biglietti(request, id_film):
 
         spettacolo_id = request.POST.get('spettacolo')
         posto_id = request.POST.get('posto')
-        metodo = request.POST.get('metodo_pagamento', 'Carta')
+        metodo = request.POST.get('metodo_pagamento')
+        metodi_validi = ['PayPal', 'Carta di credito', 'Carta di debito']
 
         if not spettacolo_id or not posto_id:
             error = 'Selezionare spettacolo e posto prima di confermare.'
+
+        elif metodo not in metodi_validi:
+            error = 'Selezionare un metodo di pagamento valido'
+
         else:
             try:
                 spettacolo_obj = Spettacolo.objects.select_related('sala').get(id_spettacolo=spettacolo_id)
@@ -460,6 +474,113 @@ def operatore_dashboard(request):
         }
     )
 
+
+def mie_recensioni(request):
+
+    cliente_id = request.session.get('cliente_id')
+
+    if not cliente_id:
+        return redirect('login')
+
+    try:
+        cliente = Cliente.objects.get(id_cliente=cliente_id)
+    except Cliente.DoesNotExist:
+        request.session.flush()
+        return redirect('login')
+
+    if request.method == 'POST':
+
+        film_id = request.POST.get('film')
+        valutazione = request.POST.get('valutazione')
+        descrizione = request.POST.get('descrizione')
+
+        if not film_id or not valutazione or not descrizione:
+            messages.error(request, 'Compila tutti i campi della recensione.')
+            return redirect('mie_recensioni')
+
+        try:
+            valutazione = int(valutazione)
+        except ValueError:
+            messages.error(request, 'La valutazione deve essere un numero valido.')
+            return redirect('mie_recensioni')
+
+        if valutazione < 1 or valutazione > 5:
+            messages.error(request, 'La valutazione deve essere compresa tra 1 e 5.')
+            return redirect('mie_recensioni')
+
+        film_acquistato = Biglietto.objects.filter(
+            cliente=cliente,
+            spettacolo__film__id_film=film_id
+        ).exists()
+
+        if not film_acquistato:
+            messages.error(request, 'Puoi recensire solo film per cui hai acquistato un biglietto.')
+            return redirect('mie_recensioni')
+
+        recensione_esistente = Recensione.objects.filter(
+            cliente=cliente,
+            film__id_film=film_id
+        ).exists()
+
+        if recensione_esistente:
+            messages.error(request, 'Hai già recensito questo film.')
+            return redirect('mie_recensioni')
+
+        try:
+            film = Film.objects.get(id_film=film_id)
+        except Film.DoesNotExist:
+            messages.error(request, 'Film non valido.')
+            return redirect('mie_recensioni')
+
+        Recensione.objects.create(
+            cliente=cliente,
+            film=film,
+            valutazione=valutazione,
+            descrizione=descrizione
+        )
+
+        messages.success(request, 'Recensione aggiunta con successo.')
+        return redirect('mie_recensioni')
+
+    recensioni = Recensione.objects.filter(
+        cliente=cliente
+    ).select_related(
+        'film'
+    ).order_by(
+        '-id_recensione'
+    )
+
+    film_ids_acquistati = Biglietto.objects.filter(
+        cliente=cliente
+    ).values_list(
+        'spettacolo__film__id_film',
+        flat=True
+    ).distinct()
+
+    film_ids_recensiti = Recensione.objects.filter(
+        cliente=cliente
+    ).values_list(
+        'film__id_film',
+        flat=True
+    )
+
+    film_recensibili = Film.objects.filter(
+        id_film__in=film_ids_acquistati
+    ).exclude(
+        id_film__in=film_ids_recensiti
+    ).order_by(
+        'titolo'
+    )
+
+    return render(
+        request,
+        'mie_recensioni.html',
+        {
+            'cliente': cliente,
+            'recensioni': recensioni,
+            'film_recensibili': film_recensibili
+        }
+    )
 
 def logout(request):
     request.session.flush()

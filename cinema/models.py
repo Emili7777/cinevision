@@ -8,7 +8,6 @@ class Cliente(models.Model):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
     premium = models.BooleanField(default=False)
-    id_carta = models.IntegerField(unique=True, null=True, blank=True)
 
     class Meta:
         db_table = 'Cliente'
@@ -23,7 +22,7 @@ class Operatore(models.Model):
     cognome = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
-    stipendio = models.DecimalField(max_digits=8, decimal_places=2)
+    tipo_di_contratto = models.CharField(max_length=50)
     data_assunzione = models.DateField()
 
     class Meta:

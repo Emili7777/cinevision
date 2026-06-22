@@ -12,6 +12,8 @@ urlpatterns = [
     path('spettacolo/<int:id_spettacolo>/',views.dettaglio_spettacolo,name='dettaglio_spettacolo'),
     path("registrazione/", views.registrazione, name="registrazione"),
     path("profilo/", views.profilo, name="profilo"),
-    path("logout/", views.logout, name="logout"),
     path("operatore/", views.operatore_dashboard, name="operatore_dashboard"),
+    path("mie-recensioni/", views.mie_recensioni, name="mie_recensioni"),
+    path("logout/", views.logout, name="logout"),
+
 ]

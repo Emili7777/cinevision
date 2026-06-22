@@ -93,6 +93,9 @@
             <a href="{% url 'homepage' %}" class="cine-nav-link active">
                 HOME
             </a>
+            <a href="{% url 'mie_recensioni' %}" class="cine-nav-link">
+                LE MIE RECENSIONI
+            </a>
             <a href="{% url 'profilo' %}" class="cine-profile">
                 PROFILO
             </a>
@@ -153,6 +156,24 @@
                             <p class="card-text">
                                 {{ film.durata }} min
                             </p>
+
+                            {% if film.numero_recensioni %}
+                                <p class="card-text">
+                                    <strong>Valutazione media:</strong><br>
+                                    <span class="text-warning">
+                                        ★ {{ film.media_valutazione|floatformat:1 }}/5
+                                    </span>
+                                    <br>
+                                    <small class="text-secondary">
+                                        {{ film.numero_recensioni }} recensione/i
+                                    </small>
+                                </p>
+                            {% else %}
+                                <p class="card-text text-secondary">
+                                    Nessuna recensione
+                                </p>
+                            {% endif %}
+
 
                             <a href="{% url 'acquista_biglietti' film.id_film %}"
                                 class="btn btn-danger w-100">

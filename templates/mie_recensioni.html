@@ -1,0 +1,165 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Le mie recensioni</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-dark text-white">
+
+<nav class="navbar navbar-dark bg-black border-bottom border-danger">
+    <div class="container d-flex justify-content-between align-items-center">
+
+        <a href="{% url 'homepage' %}" class="navbar-brand text-danger fw-bold">
+            CINEVISION
+        </a>
+
+        <div>
+            <a href="{% url 'homepage' %}" class="btn btn-outline-light me-2">
+                HOME
+            </a>
+
+            <a href="{% url 'profilo' %}" class="btn btn-outline-danger">
+                PROFILO
+            </a>
+        </div>
+
+    </div>
+</nav>
+
+<div class="container mt-5">
+
+    <h1 class="text-danger mb-4">Le mie recensioni</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+
+        <!-- AGGIUNGI RECENSIONE -->
+        <div class="col-lg-5 mb-4">
+            <div class="card bg-black text-white border-danger">
+                <div class="card-body">
+
+                    <h3 class="mb-3">Aggiungi recensione</h3>
+
+                    {% if film_recensibili %}
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="film" class="form-label">Film</label>
+
+                                <select name="film" id="film" class="form-select" required>
+                                    <option value="">Seleziona un film</option>
+
+                                    {% for film in film_recensibili %}
+                                        <option value="{{ film.id_film }}">
+                                            {{ film.titolo }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="valutazione" class="form-label">Valutazione</label>
+
+                                <select name="valutazione" id="valutazione" class="form-select" required>
+                                    <option value="">Seleziona valutazione</option>
+                                    <option value="1">1 - Pessimo</option>
+                                    <option value="2">2 - Scarso</option>
+                                    <option value="3">3 - Sufficiente</option>
+                                    <option value="4">4 - Bello</option>
+                                    <option value="5">5 - Ottimo</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="descrizione" class="form-label">Recensione</label>
+
+                                <textarea name="descrizione"
+                                          id="descrizione"
+                                          class="form-control"
+                                          rows="5"
+                                          placeholder="Scrivi la tua recensione..."
+                                          required></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger w-100">
+                                Pubblica recensione
+                            </button>
+                        </form>
+
+                    {% else %}
+
+                        <p class="text-muted mb-0">
+                            Non hai film disponibili da recensire.
+                            Puoi recensire solo film acquistati che non hai già recensito.
+                        </p>
+
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+        <!-- RECENSIONI PASSATE -->
+        <div class="col-lg-7">
+            <div class="card bg-black text-white border-danger">
+                <div class="card-body">
+
+                    <h3 class="mb-3">Recensioni pubblicate</h3>
+
+                    {% if recensioni %}
+
+                        {% for recensione in recensioni %}
+                            <div class="border-bottom border-secondary py-3">
+
+                                <h5 class="text-danger mb-1">
+                                    {{ recensione.film.titolo }}
+                                </h5>
+
+                                <p class="mb-1">
+                                    <strong>Valutazione:</strong>
+                                    {{ recensione.valutazione }}/5
+                                </p>
+
+                                <p class="mb-0">
+                                    {{ recensione.descrizione }}
+                                </p>
+
+                            </div>
+                        {% endfor %}
+
+                    {% else %}
+
+                        <p class="text-muted mb-0">
+                            Non hai ancora pubblicato recensioni.
+                        </p>
+
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
