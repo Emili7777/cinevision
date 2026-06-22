@@ -29,18 +29,26 @@
 
                         <input
                                 type="email"
+                                name="email"
                                 class="form-control mb-3"
                                 placeholder="Email">
 
                         <input
                                 type="password"
+                                name="password"
                                 class="form-control mb-3"
                                 placeholder="Password">
 
-                        <button
+                        <button type="submit"
                                 class="btn btn-danger w-100">
                             Login
                         </button>
+
+                        <div class="text-center mt-3">
+                            <a href="{% url 'registrazione' %}" class="text-danger text-decoration-none">
+                                Non hai un account? Registrati
+                            </a>
+                        </div>
 
                     </form>
 

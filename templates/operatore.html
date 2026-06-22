@@ -1,0 +1,269 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Area Operatore - CineVision</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #121212;
+        }
+
+        .cine-navbar {
+            background: #050505;
+            border-bottom: 1px solid #dc3545;
+            padding: 14px 0;
+        }
+
+        .cine-logo {
+            color: #dc3545;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-decoration: none;
+            font-size: 22px;
+        }
+
+        .cine-nav-link {
+            color: #b5b5b5;
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 24px;
+            transition: 0.2s;
+        }
+
+        .cine-nav-link:hover {
+            color: white;
+        }
+
+        .table input,
+        .table select {
+            min-width: 130px;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="cine-navbar">
+    <div class="container d-flex justify-content-between align-items-center">
+
+        <a href="{% url 'operatore_dashboard' %}" class="cine-logo">
+            CINEVISION - OPERATORE
+        </a>
+
+        <div class="d-flex align-items-center">
+            <span class="text-white me-3">
+                {{ operatore.nome }} {{ operatore.cognome }}
+            </span>
+
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger">
+                Logout
+            </a>
+        </div>
+
+    </div>
+</nav>
+
+<div class="container mt-4">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card bg-dark text-white shadow">
+
+        <div class="card-header">
+            <h3 class="mb-0">
+                Gestione Spettacoli
+            </h3>
+        </div>
+
+        <div class="card-body">
+
+            <p class="text-secondary">
+                Da questa pagina puoi modificare sala, data e orario degli spettacoli.
+            </p>
+
+            <div class="card bg-black text-white border-secondary mb-4">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            Aggiungi nuovo spettacolo
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <form method="POST" class="row g-3">
+            {% csrf_token %}
+
+            <input type="hidden" name="azione" value="aggiungi">
+
+            <div class="col-md-3">
+                <label class="form-label">Film</label>
+                <select name="film" class="form-select" required>
+                    <option value="">Seleziona film</option>
+
+                    {% for f in film %}
+                        <option value="{{ f.id_film }}">
+                            {{ f.titolo }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Sala</label>
+                <select name="sala" class="form-select" required>
+                    <option value="">Seleziona sala</option>
+
+                    {% for sala in sale %}
+                        <option value="{{ sala.id_sala }}">
+                            {{ sala.nome_sala }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Data</label>
+                <input type="date"
+                       name="data_spettacolo"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Orario</label>
+                <input type="time"
+                       name="ora_inizio"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-danger w-100">
+                    Aggiungi
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+            <div class="table-responsive">
+
+                <table class="table table-dark table-hover align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Film</th>
+                            <th>Genere</th>
+                            <th>Sala</th>
+                            <th>Data</th>
+                            <th>Orario</th>
+                            <th>Azione</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for spettacolo in spettacoli %}
+
+                        <tr>
+                            <form method="POST">
+                                {% csrf_token %}
+
+                                <input type="hidden" name="azione" value="modifica">
+
+                                <input type="hidden"
+                                       name="id_spettacolo"
+                                       value="{{ spettacolo.id_spettacolo }}">
+
+                                <td>
+                                    <strong>{{ spettacolo.film.titolo }}</strong>
+                                </td>
+
+                                <td>
+                                    {{ spettacolo.film.genere }}
+                                </td>
+
+                                <td>
+                                    <select name="sala" class="form-select form-select-sm">
+                                        {% for sala in sale %}
+                                            <option value="{{ sala.id_sala }}"
+                                                {% if sala.id_sala == spettacolo.sala.id_sala %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                {{ sala.nome_sala }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+
+                                <td>
+                                    <input type="date"
+                                           name="data_spettacolo"
+                                           class="form-control form-control-sm"
+                                           value="{{ spettacolo.data_spettacolo|date:'Y-m-d' }}">
+                                </td>
+
+                                <td>
+                                    <input type="time"
+                                           name="ora_inizio"
+                                           class="form-control form-control-sm"
+                                           value="{{ spettacolo.ora_inizio|time:'H:i' }}">
+                                </td>
+
+                                <td>
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        Salva
+                                    </button>
+                                </td>
+
+                            </form>
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                Nessuno spettacolo disponibile
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
