@@ -410,15 +410,27 @@ def operatore_dashboard(request):
                 film = Film.objects.get(id_film=id_film)
                 sala = Sala.objects.get(id_sala=id_sala)
 
-                Spettacolo.objects.create(
-                    film=film,
+                spettacolo_esistente = Spettacolo.objects.filter(
                     sala=sala,
                     data_spettacolo=data_spettacolo,
-                    ora_inizio=ora_inizio,
-                    operatore=operatore
-                )
+                    ora_inizio=ora_inizio
+                ).exists()
 
-                messages.success(request, 'Spettacolo aggiunto con successo')
+                if spettacolo_esistente:
+                    messages.error(
+                        request,
+                        'Esiste già uno spettacolo in questa sala, nella stessa data e allo stesso orario.'
+                    )
+                else:
+                    Spettacolo.objects.create(
+                        film=film,
+                        sala=sala,
+                        data_spettacolo=data_spettacolo,
+                        ora_inizio=ora_inizio,
+                        operatore=operatore
+                    )
+
+                    messages.success(request, 'Spettacolo aggiunto con successo')
 
             except (Film.DoesNotExist, Sala.DoesNotExist):
                 messages.error(request, 'Errore durante l’aggiunta dello spettacolo')
@@ -437,13 +449,27 @@ def operatore_dashboard(request):
                 spettacolo = Spettacolo.objects.get(id_spettacolo=id_spettacolo)
                 sala = Sala.objects.get(id_sala=id_sala)
 
-                spettacolo.sala = sala
-                spettacolo.data_spettacolo = data_spettacolo
-                spettacolo.ora_inizio = ora_inizio
-                spettacolo.operatore = operatore
-                spettacolo.save()
+                spettacolo_esistente = Spettacolo.objects.filter(
+                    sala=sala,
+                    data_spettacolo=data_spettacolo,
+                    ora_inizio=ora_inizio
+                ).exclude(
+                    id_spettacolo=spettacolo.id_spettacolo
+                ).exists()
 
-                messages.success(request, 'Spettacolo modificato con successo')
+                if spettacolo_esistente:
+                    messages.error(
+                        request,
+                        'Non puoi modificare lo spettacolo: esiste già uno spettacolo in questa sala, nella stessa data e allo stesso orario.'
+                    )
+                else:
+                    spettacolo.sala = sala
+                    spettacolo.data_spettacolo = data_spettacolo
+                    spettacolo.ora_inizio = ora_inizio
+                    spettacolo.operatore = operatore
+                    spettacolo.save()
+
+                    messages.success(request, 'Spettacolo modificato con successo')
 
             except (Spettacolo.DoesNotExist, Sala.DoesNotExist):
                 messages.error(request, 'Errore durante la modifica dello spettacolo')
