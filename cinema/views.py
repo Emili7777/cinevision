@@ -1,10 +1,14 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import * #NON TOCCARE
-import hashlib
+from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 from django.db.models import Avg, Count
+from django.db import IntegrityError, DatabaseError
+from django.utils.dateparse import parse_date
 
 
 def login(request):
@@ -14,17 +18,10 @@ def login(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
 
-        password_md5 = hashlib.md5(
-            password.encode('utf-8')
-        ).hexdigest()
-
         # Prima controllo se è un cliente
-        cliente = Cliente.objects.filter(
-            email=email,
-            password=password_md5
-        ).first()
+        cliente = Cliente.objects.filter(email=email).first()
 
-        if cliente:
+        if cliente and check_password(password, cliente.password):
             request.session.flush()
             request.session['cliente_id'] = cliente.id_cliente
             request.session['nome'] = cliente.nome
@@ -33,12 +30,9 @@ def login(request):
             return redirect('homepage')
 
         # Poi controllo se è un operatore
-        operatore = Operatore.objects.filter(
-            email=email,
-            password=password_md5
-        ).first()
+        operatore = Operatore.objects.filter(email=email).first()
 
-        if operatore:
+        if operatore and check_password(password, operatore.password):
             request.session.flush()
             request.session['operatore_id'] = operatore.id_operatore
             request.session['nome'] = operatore.nome
@@ -55,6 +49,17 @@ def login(request):
         )
 
     return render(request, 'Log-in.html')
+
+def messaggio_errore_database(errore):
+    testo_errore = str(errore)
+
+    if 'Sala occupata' in testo_errore:
+        return 'Sala occupata: lo spettacolo si sovrappone a un altro film. Ricorda che dopo ogni film servono anche 30 minuti liberi.'
+
+    if 'data precedente a oggi' in testo_errore:
+        return 'Non puoi inserire o modificare uno spettacolo con data precedente a oggi.'
+
+    return 'Errore database: operazione non consentita.'
 
 
 def registrazione(request):
@@ -85,24 +90,41 @@ def registrazione(request):
                 }
             )
 
-        password_md5 = hashlib.md5(
-            password.encode('utf-8')
-        ).hexdigest()
+        if Operatore.objects.filter(email=email).exists():
+            return render(
+                request,
+                'registrazione.html',
+                {
+                    'errore': 'Email già registrata'
+                }
+            )
+
+        try:
+            validate_password(password)
+        except ValidationError as errori:
+            return render(
+                request,
+                'registrazione.html',
+                {
+                    'errore': errori.messages[0]
+                }
+            )
 
         cliente = Cliente.objects.create(
             nome=nome,
             cognome=cognome,
             email=email,
-            password=password_md5
+            password=make_password(password)
         )
 
+        request.session.flush()
         request.session['cliente_id'] = cliente.id_cliente
         request.session['nome'] = cliente.nome
+        request.session['ruolo'] = 'cliente'
 
         return redirect('homepage')
 
     return render(request, 'registrazione.html')
-
 
 def homepage(request):
 
@@ -406,13 +428,23 @@ def operatore_dashboard(request):
             data_spettacolo = request.POST.get('data_spettacolo')
             ora_inizio = request.POST.get('ora_inizio')
 
+            data_spettacolo_obj = parse_date(data_spettacolo)
+
+            if not data_spettacolo_obj:
+                messages.error(request, 'Inserisci una data valida.')
+                return redirect('operatore_dashboard')
+
+            if data_spettacolo_obj < timezone.localdate():
+                messages.error(request, 'Non puoi aggiungere uno spettacolo con data precedente a oggi.')
+                return redirect('operatore_dashboard')
+
             try:
                 film = Film.objects.get(id_film=id_film)
                 sala = Sala.objects.get(id_sala=id_sala)
 
                 spettacolo_esistente = Spettacolo.objects.filter(
                     sala=sala,
-                    data_spettacolo=data_spettacolo,
+                    data_spettacolo=data_spettacolo_obj,
                     ora_inizio=ora_inizio
                 ).exists()
 
@@ -425,7 +457,7 @@ def operatore_dashboard(request):
                     Spettacolo.objects.create(
                         film=film,
                         sala=sala,
-                        data_spettacolo=data_spettacolo,
+                        data_spettacolo=data_spettacolo_obj,
                         ora_inizio=ora_inizio,
                         operatore=operatore
                     )
@@ -434,6 +466,13 @@ def operatore_dashboard(request):
 
             except (Film.DoesNotExist, Sala.DoesNotExist):
                 messages.error(request, 'Errore durante l’aggiunta dello spettacolo')
+
+
+            except DatabaseError as errore:
+                messages.error(
+                    request,
+                    messaggio_errore_database(errore)
+                )
 
             return redirect('operatore_dashboard')
 
@@ -444,6 +483,17 @@ def operatore_dashboard(request):
             id_sala = request.POST.get('sala')
             data_spettacolo = request.POST.get('data_spettacolo')
             ora_inizio = request.POST.get('ora_inizio')
+
+            data_spettacolo_obj = parse_date(data_spettacolo)
+
+            if not data_spettacolo_obj:
+                messages.error(request, 'Inserisci una data valida.')
+                return redirect('operatore_dashboard')
+
+            if data_spettacolo_obj < timezone.localdate():
+                messages.error(request, 'Non puoi modificare uno spettacolo inserendo una data precedente a oggi.')
+                return redirect('operatore_dashboard')
+
 
             try:
                 spettacolo = Spettacolo.objects.get(id_spettacolo=id_spettacolo)
@@ -473,6 +523,50 @@ def operatore_dashboard(request):
 
             except (Spettacolo.DoesNotExist, Sala.DoesNotExist):
                 messages.error(request, 'Errore durante la modifica dello spettacolo')
+
+
+            except DatabaseError as errore:
+                messages.error(
+                    request,
+                    messaggio_errore_database(errore)
+                )
+
+            return redirect('operatore_dashboard')
+
+        # ELIMINA SPETTACOLO ESISTENTE
+        elif azione == 'elimina':
+
+            id_spettacolo = request.POST.get('id_spettacolo')
+
+            try:
+                spettacolo = Spettacolo.objects.get(id_spettacolo=id_spettacolo)
+
+                biglietti_venduti = Biglietto.objects.filter(
+                    spettacolo=spettacolo
+                ).exists()
+
+                if biglietti_venduti:
+                    messages.error(
+                        request,
+                        'Non puoi eliminare questo spettacolo perché sono già stati venduti dei biglietti.'
+                    )
+                else:
+                    titolo_film = spettacolo.film.titolo
+                    spettacolo.delete()
+
+                    messages.success(
+                        request,
+                        f'Spettacolo "{titolo_film}" eliminato con successo.'
+                    )
+
+            except Spettacolo.DoesNotExist:
+                messages.error(request, 'Spettacolo non trovato.')
+
+            except IntegrityError:
+                messages.error(
+                    request,
+                    'Errore: non è possibile eliminare questo spettacolo perché è collegato ad altri dati.'
+                )
 
             return redirect('operatore_dashboard')
 

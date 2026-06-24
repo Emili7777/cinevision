@@ -237,9 +237,22 @@
                                 </td>
 
                                 <td>
-                                    <button type="submit" class="btn btn-danger btn-sm">
-                                        Salva
-                                    </button>
+                                     <div class="d-flex gap-2">
+                                        <button type="submit"
+                                                name="azione"
+                                                value="modifica"
+                                                class="btn btn-danger btn-sm">
+                                            Salva
+                                        </button>
+
+                                        <button type="submit"
+                                                name="azione"
+                                                value="elimina"
+                                                class="btn btn-outline-danger btn-sm"
+                                                onclick="return confirm('Sei sicuro di voler eliminare questo spettacolo?');">
+                                            Elimina
+                                        </button>
+                                    </div>
                                 </td>
 
                             </form>
