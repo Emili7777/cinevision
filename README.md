@@ -260,8 +260,22 @@ Le credenziali dipendono dagli utenti presenti nel database importato tramite `c
 Le password di test sono:
 
 ```text
-Cliente: cliente123
-Operatore: operatore123
+Email clienti:
+mario.rossi@email.com
+giulia.bianchi@email.com
+luca.verdi@email.com
+sara.neri@email.com
+alessandro.romano@email.com
+
+Password Cliente: cliente123
+
+Email Operatori:
+andrea.ferrari@cinevision.com
+martina.costa@cinevision.com
+davide.moretti@cinevision.com
+
+Password Operatore: operatore123
+
 ```
 
 Per accedere è necessario utilizzare l’email associata all’utente cliente o operatore presente nel database.
