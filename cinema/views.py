@@ -20,6 +20,7 @@ def login(request):
 
         # Prima controllo se è un cliente
         cliente = Cliente.objects.filter(email=email).first()
+        print(cliente)
 
         if cliente and check_password(password, cliente.password):
             request.session.flush()
